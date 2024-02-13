@@ -1,6 +1,6 @@
-# Object Model Lab [![pipeline status](https://www-apps.univ-lehavre.fr/forge/2022-2023-M1/WEB-objectmodel-lab/badges/master/pipeline.svg)](https://www-apps.univ-lehavre.fr/forge/2022-2023-M1/WEB-objectmodel-lab/commits/master) [![coverage report](https://www-apps.univ-lehavre.fr/forge/2022-2023-M1/WEB-objectmodel-lab/badges/master/coverage.svg)](https://www-apps.univ-lehavre.fr/forge/2022-2023-M1/WEB-objectmodel-lab/commits/master)
+# Object Model Lab [![pipeline status](https://www-apps.univ-lehavre.fr/forge/2023-2024-M1/WEB-objectmodel-lab/badges/master/pipeline.svg)](https://www-apps.univ-lehavre.fr/forge/2023-2024-M1/WEB-objectmodel-lab/commits/master) [![coverage report](https://www-apps.univ-lehavre.fr/forge/2023-2024-M1/WEB-objectmodel-lab/badges/master/coverage.svg)](https://www-apps.univ-lehavre.fr/forge/2023-2024-M1/WEB-objectmodel-lab/commits/master)
 
-- Année : M1 IWOCS 2022-2023
+- Année : M1 IWOCS 2023-2024
 - Matière: WEB
 - TP : n°2
 
