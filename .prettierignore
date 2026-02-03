@@ -1,0 +1,12 @@
+node_modules
+dist
+coverage
+eslint.config.js
+vitest.config.ts
+.gitignore
+.prettierrc
+package-lock.json
+package.json
+.prettierignore
+test_data.json
+tsconfig.json

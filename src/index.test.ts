@@ -1,5 +1,5 @@
-import { describe, beforeAll, expect, test } from 'vitest';
 import { promises as fs } from 'fs';
+import { beforeAll, describe, expect, test } from 'vitest';
 
 import { version } from './index';
 
