@@ -5,7 +5,7 @@ export interface Position{
 
 export interface RawSensorHistory{
     timestamp: string;
-    valur: number | Position;
+    value: number | Position;
 }
 
 export interface RawSensorData{
