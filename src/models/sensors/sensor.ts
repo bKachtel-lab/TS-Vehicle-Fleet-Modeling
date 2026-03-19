@@ -14,6 +14,11 @@ export abstract class Sensor{
     getHistory() {
         return this.history;
     }
+    
+    // Récupère la dernière donnée brute
+    protected getLastRecord(): RawSensorHistory | null {
+        return this.history.length > 0 ? this.history[this.history.length - 1] : null;
+    }
 
     // Récupère la dernière valeur enregistrée
     getLastValue() {
