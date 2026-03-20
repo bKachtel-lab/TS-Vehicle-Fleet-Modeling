@@ -31,7 +31,7 @@ export class Truck extends Vehicle  {
     }
 
     //Vérifie si le camion est en surcharge
-    isOverLoad(): boolean {
+    isOverLoaded(): boolean {
         return this.getCurrentLoad() >= this.maxLoad;
     }
 

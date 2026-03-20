@@ -38,6 +38,44 @@ describe('Sensor model tests', () => {
     });
   });
 
+  // --2 TEST DU MODÈLE TRUCK --
+ 
+   describe('Truck Model', () => {
+    test('Cas sans capteur de type Load: doit calculer correctement la charge et détecter la surcharge', () => {
+      
+       const fleet = VehicleFactory.createFleet(data);
+       const truck = fleet.find(v => v instanceof Truck) as Truck;
+
+       //Il doit trouver le truck present dans le JSON
+       expect(truck);
+
+       if(truck) {
+          const initialRate = truck.getLoadRate();
+          expect(!initialRate);
+
+          //TEST DE setLoad
+          truck.setLoad(truck.maxLoad + 100); // On force la surharge
+          expect(truck.isOverLoaded()).toBe(false);
+       }
+    });
+    test ('Cas avec capteur de type Load', () => {
+      // On crée un capteur de charge manuellement pour isoler le test
+      const loadSensor = new LoadSensor(99, 'Load', []);
+      const truck = new Truck(101, 'Volvo', 'FH16', 2024, 40000, [loadSensor]);
+
+      // 1. Test de la charge initiale (0)
+      expect(truck.getLoadRate()).toBe(0);
+
+      // 2. Test de mise à jour de la charge
+      truck.setLoad(20000); // 50%
+      expect(truck.getLoadRate()).toBe(50);
+      expect(truck.isOverLoaded()).toBe(false);
+
+      // 3. Test de la surcharge
+      truck.setLoad(45000); 
+      expect(truck.isOverLoaded()).toBe(true);
+    })
+   });
 
 
 
