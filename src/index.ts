@@ -15,7 +15,7 @@ async function main(){
 
         //2. Utiliser la factory pour transformer le JSON en instances de classes
         const fleet = VehicleFactory.createFleet(jsonContent);
-        console.log(`✅ ${fleet.length} véhicules chargés avec succès.\n`);
+        console.log(` ${fleet.length} véhicules chargés avec succès.\n`);
 
         //3. Démonstration
         simulateActivity(fleet);

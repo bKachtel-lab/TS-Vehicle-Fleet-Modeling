@@ -53,6 +53,15 @@ describe('Sensor model tests', () => {
         VehicleFactory.createFleet(badData as any);
       }).toThrow('Type de véhicule non géré : UFO');
     });
+    test('Fix Factory: Empty sensors and unknown type', () => {
+      const dataWithoutSensors = [{
+        id: 1, type: 'Truck', brand: 'Volvo', model: 'FH', year: 2024, sensors: []
+      }];
+  
+      // Valide la création quand sensors est un tableau vide (Ligne 41/60)
+    const fleet = VehicleFactory.createFleet(dataWithoutSensors as any);
+      expect(fleet[0].getAverageSpeed()).toBe(0);
+    });
   });
 
   // --2 TEST DU MODÈLE TRUCK --
@@ -95,7 +104,7 @@ describe('Sensor model tests', () => {
    }); 
 
    describe('Electrical Model', () => {
-    test('doit gérer la batterie et l\'autonomie', () => {
+    test('Cas present dans JSON ; doit gérer la batterie et l\'autonomie', () => {
       const fleet = VehicleFactory.createFleet(data);
       const eCar = fleet.find(v => v instanceof ElectricCar) as ElectricCar;
 
@@ -109,7 +118,15 @@ describe('Sensor model tests', () => {
         expect(eCar.getEstimatedRange()).toBeGreaterThan(0);
       }
     });
+    test('Création du electricalCar manuellement ; doit calculer le status et l,estimation de la batterie', () => {
+      const bat = new BatterySensor(1, 'Battery', [{ timestamp: 'now', value: 75 }] );
+      const eCar = new ElectricCar(505, 'Tesla', 'Model 3', 2024, 100, [bat]);
+
+      expect(eCar.getBatteryStatus()).toBe(75);
+      expect(eCar.getEstimatedRange()).toBeGreaterThan(0);
+    });
    });
+
    // --- 4. TESTS DE LA CAR (THERMIQUE) ET DU BIKE ---
   describe('Other Vehicles', () => {
     test('doit gérer le plein d\'essence pour une Car', () => {
@@ -169,7 +186,26 @@ describe('Sensor model tests', () => {
       expect(emptySensor.getMaxValue()).toBe(0);
       expect(emptySensor.getEvolution()).toBe(0);
 
-    })
+    });
+    test('Fix Line 23: Empty sensor history', () => {
+    // On crée un capteur SANS historique
+    const emptySpeed = new SpeedSensor(99, 'Speed', []);
+  
+    // L'appel de ces méthodes va enfin valider la ligne 23
+    expect(emptySpeed.getAverage()).toBe(0);
+    expect(emptySpeed.getMaxValue()).toBe(0);
+    });
+
+    test ('BatterySensor: doit retourner la valeur correcte depuis l,historique', () => {
+      const bat = new BatterySensor(1, 'Battery', [{ timestamp: '2026', value: 80 }]);
+      expect(bat.getBatteryLevel()).toBe(80);
+    });
+
+    test('FuelSensor doit gérer les historiques vide', () => {
+      const fuel = new FuelLevelSensor(2, 'Fuel', []);
+      //Forcer le passage 
+      expect(fuel.getAverage()).toBe(0);
+    });
   });
 
 
