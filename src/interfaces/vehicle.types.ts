@@ -25,4 +25,5 @@ export interface RawVehicleData{
     fuelType?: string;
     batteryCapacity?: number;
     maxLoad?: number;
+    bikeType?: string;
 }
