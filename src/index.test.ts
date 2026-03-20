@@ -12,6 +12,7 @@ import { BatterySensor } from '../src/models/sensors/batterySensor';
 import { VehicleFactory } from './services/vehicleFactory';
 import { Car } from './models/vehicles/car';
 import { Bike } from './models/vehicles/bike';
+import { FuelLevelSensor } from './models/sensors/fuelLevelSensor';
 let data : any;
 beforeAll(async () => {
   data = await fs.readFile('./resources/test_data.json', {
@@ -113,14 +114,25 @@ describe('Sensor model tests', () => {
   describe('Other Vehicles', () => {
     test('doit gérer le plein d\'essence pour une Car', () => {
         // On crée manuellement pour tester la logique si pas dans le JSON
-         const fleet = VehicleFactory.createFleet(data);
-
-        const car = fleet.find(v => v instanceof Car) as Car;
-        car.refillFuel(50);
+        const fuelSensor = new FuelLevelSensor(50, 'Fuel', [{ timestamp: 'now', value: 10 }]);
+        const car = new Car(303, 'Peugeot', '208', 2022, 'Essence', [fuelSensor]);
+        car.refillFuel(80);
         // Si tu as un FuelSensor, on vérifie la valeur
-        expect(car.getFuelLevel()).toBe(50);
+        expect(car.getFuelLevel()).toBe(80);
     });
 
+    //Test sur ElectricCar Manuellement
+      test('doit gérer une ElectricCar manuellement', () => {
+      const batSensor = new BatterySensor(60, 'Battery', [{ timestamp: 'now', value: 50 }]);
+      const eCar = new ElectricCar(404, 'Tesla', 'Model 3', 2023, 100,[batSensor]);
+      
+      expect(eCar.getBatteryStatus()).toBe(50);
+      eCar.chargeBattery(100);
+      expect(eCar.getBatteryStatus()).toBe(100);
+      expect(eCar.getEstimatedRange()).toBeGreaterThan(0);
+    });
+
+    // Test sur un Bike
     test('doit instancier un Bike correctement', () => {
         const bike = new Bike(88, 'Giant', 'Escape', 2022, 'VTC', []);
         expect(bike.bikeType).toBe('VTC');
