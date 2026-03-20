@@ -1,3 +1,4 @@
+export const version = () => '0.0.1';
 import { promises as fs } from 'fs';
 import { Truck } from './models/vehicles/truck';
 import { Car } from './models/vehicles/car';
