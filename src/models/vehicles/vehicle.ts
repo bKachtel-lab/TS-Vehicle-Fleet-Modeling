@@ -18,4 +18,18 @@ export abstract class Vehicle {
     getSensors(): Sensor[] {
         return this.sensors;
     }
+
+    //Ajoute un capteur 
+    addSensor(sensor:Sensor): void{
+        const exists = this.sensors.find(s => s.id === sensor.id);
+        if(!exists){
+            this.sensors.push(sensor);
+        }
+    }
+
+    //Supprime un capteur par son ID
+    removeSensor(sensorId: number): void{
+        this.sensors = this.sensors.filter(s => s.id !== sensorId);
+        
+    }
 }
