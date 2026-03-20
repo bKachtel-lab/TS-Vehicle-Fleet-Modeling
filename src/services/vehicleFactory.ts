@@ -30,8 +30,7 @@ export class VehicleFactory{
 
     private static createVehicle(v: RawVehicleData): Vehicle {
         //On crée d'abord la liste des instances de capterus
-        const sensors = v.sensors.map(s => this.createSensor(s));
-
+const sensors = (v.sensors || []).map(s => this.createSensor(s));
         switch(v.type) {
             case 'Truck' : 
                     return new Truck(v.id, v.brand, v.model, v.year, v.maxLoad || 0, sensors);

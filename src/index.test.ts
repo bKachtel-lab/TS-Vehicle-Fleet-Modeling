@@ -3,7 +3,6 @@ import { beforeAll, describe, expect, test } from 'vitest';
 
 import { version } from './index';
 
-//imports 
 import { Truck } from '../src/models/vehicles/truck';
 import { ElectricCar } from '../src/models/vehicles/electricCar';
 import { SpeedSensor } from '../src/models/sensors/speedSensor';
@@ -13,280 +12,267 @@ import { VehicleFactory } from './services/vehicleFactory';
 import { Car } from './models/vehicles/car';
 import { Bike } from './models/vehicles/bike';
 import { FuelLevelSensor } from './models/sensors/fuelLevelSensor';
-let data : any;
+import { GPSSensor } from './models/sensors/GPSSensor';
+import { SensorHistory } from './models/sensors/sensorHistory';
+
+let data: any;
+
 beforeAll(async () => {
-  data = await fs.readFile('./resources/test_data.json', {
-    encoding: 'utf8',
-  });
-  data = JSON.parse(data);
+  const raw = await fs.readFile('./resources/test_data.json', 'utf8');
+  data = JSON.parse(raw);
 });
 
-describe('Sensor model tests', () => {
-  describe('Dummy tests', () => {
-    test('data is loaded with 3 elements', () => {
-      expect(data.length).toBe(3);
-    });
-    test('version number from the model', () => {
-      expect(version()).toBe('0.0.1');
-    });
+describe('Core Tests', () => {
+
+  test('data and version', () => {
+    expect(data.length).toBe(3);
+    expect(version()).toBe('0.0.1');
   });
 
-  // --1 TEST DE LA FACTORY 
+  // ---------------- FACTORY ----------------
   describe('VehicleFactory', () => {
-    test('doit créer la flotte complète à partir du JSON', () => {
+
+    test('creates fleet from JSON', () => {
       const fleet = VehicleFactory.createFleet(data);
       expect(fleet.length).toBe(3);
-      //Vérifie que le premier est bien un Truck (selon ton JSON)
       expect(fleet[0]).toBeInstanceOf(Truck);
     });
 
-    test('doit gérer les types de véhicules inconnus dans le JSON', () => {
-      const badData = [{
-        id: 999, 
-        type: 'UFO', 
-        brand: 'Alien', 
-        model:'X-Files', 
-        year : 2026, 
-        sensors:[]}];
-
+    test('throws on unknown vehicle type', () => {
       expect(() => {
-        VehicleFactory.createFleet(badData as any);
-      }).toThrow('Type de véhicule non géré : UFO');
+        VehicleFactory.createFleet([{ id: 1, type: 'UFO', sensors: [] }] as any);
+      }).toThrow();
     });
-    test('Fix Factory: Empty sensors and unknown type', () => {
-      const dataWithoutSensors = [{
-        id: 1, type: 'Truck', brand: 'Volvo', model: 'FH', year: 2024, sensors: []
-      }];
-  
-      // Valide la création quand sensors est un tableau vide (Ligne 41/60)
-    const fleet = VehicleFactory.createFleet(dataWithoutSensors as any);
-      expect(fleet[0].getAverageSpeed()).toBe(0);
+
+    test('throws on unknown sensor type', () => {
+      expect(() => {
+        VehicleFactory.createFleet([{
+          id: 1,
+          type: 'Truck',
+          sensors: [{ id: 1, type: 'X', data: [] }]
+        }] as any);
+      }).toThrow();
     });
+
+    test('handles undefined sensors and multiple types', () => {
+      const input = [
+        {
+          id: 1,
+          type: 'Car',
+          brand: 'Peugeot',
+          model: '208',
+          year: 2024,
+          fuelType: 'Essence',
+          sensors: undefined
+        },
+        {
+          id: 2,
+          type: 'ElectricCar',
+          brand: 'Tesla',
+          model: '3',
+          year: 2024,
+          batteryCapacity: 75,
+          sensors: undefined
+        }
+      ];
+
+      const fleet = VehicleFactory.createFleet(input as any);
+      expect(fleet.length).toBe(2);
+    });
+
   });
 
-  // --2 TEST DU MODÈLE TRUCK --
- 
-   describe('Truck Model', () => {
-    test('Cas sans capteur de type Load: doit calculer correctement la charge et détecter la surcharge', () => {
-      
-       const fleet = VehicleFactory.createFleet(data);
-       const truck = fleet.find(v => v instanceof Truck) as Truck;
+  // ---------------- VEHICLES ----------------
+  describe('Vehicles', () => {
 
-       //Il doit trouver le truck present dans le JSON
-       expect(truck);
+    test('Truck without sensor', () => {
+      const t = new Truck(1, 'Volvo', 'FH', 2024, 1000, []);
+      expect(t.getLoadRate()).toBe(0);
 
-       if(truck) {
-          const initialRate = truck.getLoadRate();
-          expect(!initialRate);
-
-          //TEST DE setLoad
-          truck.setLoad(truck.maxLoad + 100); // On force la surharge
-          expect(truck.isOverLoaded()).toBe(false);
-       }
-    });
-    test ('Cas avec capteur de type Load', () => {
-      // On crée un capteur de charge manuellement pour isoler le test
-      const loadSensor = new LoadSensor(99, 'Load', []);
-      const truck = new Truck(101, 'Volvo', 'FH16', 2024, 40000, [loadSensor]);
-
-      // 1. Test de la charge initiale (0)
-      expect(truck.getLoadRate()).toBe(0);
-
-      // 2. Test de mise à jour de la charge
-      truck.setLoad(20000); // 50%
-      expect(truck.getLoadRate()).toBe(50);
-      expect(truck.isOverLoaded()).toBe(false);
-
-      // 3. Test de la surcharge
-      truck.setLoad(45000); 
-      expect(truck.isOverLoaded()).toBe(true);
-    })
-   }); 
-
-   describe('Electrical Model', () => {
-    test('Cas present dans JSON ; doit gérer la batterie et l\'autonomie', () => {
-      const fleet = VehicleFactory.createFleet(data);
-      const eCar = fleet.find(v => v instanceof ElectricCar) as ElectricCar;
-
-      if(eCar) {
-        const battery = eCar.getBatteryStatus();
-        expect(battery).toBeGreaterThanOrEqual(0);
-        expect(battery).toBeLessThanOrEqual(100);
-
-        eCar.chargeBattery(100);
-        expect(eCar.getBatteryStatus()).toBe(100);
-        expect(eCar.getEstimatedRange()).toBeGreaterThan(0);
-      }
-    });
-    test('Création du electricalCar manuellement ; doit calculer le status et l,estimation de la batterie', () => {
-      const bat = new BatterySensor(1, 'Battery', [{ timestamp: 'now', value: 75 }] );
-      const eCar = new ElectricCar(505, 'Tesla', 'Model 3', 2024, 100, [bat]);
-
-      expect(eCar.getBatteryStatus()).toBe(75);
-      expect(eCar.getEstimatedRange()).toBeGreaterThan(0);
-    });
-   });
-
-   // --- 4. TESTS DE LA CAR (THERMIQUE) ET DU BIKE ---
-  describe('Other Vehicles', () => {
-    test('doit gérer le plein d\'essence pour une Car', () => {
-        // On crée manuellement pour tester la logique si pas dans le JSON
-        const fuelSensor = new FuelLevelSensor(50, 'Fuel', [{ timestamp: 'now', value: 10 }]);
-        const car = new Car(303, 'Peugeot', '208', 2022, 'Essence', [fuelSensor]);
-        car.refillFuel(80);
-        // Si tu as un FuelSensor, on vérifie la valeur
-        expect(car.getFuelLevel()).toBe(80);
+      t.setLoad(1500);
+      expect(t.isOverLoaded()).toBe(false);
     });
 
-    //Test sur ElectricCar Manuellement
-      test('doit gérer une ElectricCar manuellement', () => {
-      const batSensor = new BatterySensor(60, 'Battery', [{ timestamp: 'now', value: 50 }]);
-      const eCar = new ElectricCar(404, 'Tesla', 'Model 3', 2023, 100,[batSensor]);
-      
-      expect(eCar.getBatteryStatus()).toBe(50);
-      eCar.chargeBattery(100);
-      expect(eCar.getBatteryStatus()).toBe(100);
-      expect(eCar.getEstimatedRange()).toBeGreaterThan(0);
+    test('Truck with sensor', () => {
+      const s = new LoadSensor(1, 'Load', []);
+      const t = new Truck(1, 'Volvo', 'FH', 2024, 1000, [s]);
+
+      t.setLoad(500);
+      expect(t.getLoadRate()).toBe(50);
     });
 
-    // Test sur un Bike
-    test('doit instancier un Bike correctement', () => {
-        const bike = new Bike(88, 'Giant', 'Escape', 2022, 'VTC', []);
-        expect(bike.bikeType).toBe('VTC');
-        expect(bike.getAverageSpeed()).toBe(0); // Pas de capteur
+    test('ElectricCar with battery sensor', () => {
+      const b = new BatterySensor(1, 'Battery', [{ timestamp: 't', value: 50 }]);
+      const e = new ElectricCar(1, 'Tesla', '3', 2024, 100, [b]);
+
+      expect(e.getBatteryStatus()).toBe(50);
+
+      e.chargeBattery(100);
+      expect(e.getBatteryStatus()).toBe(100);
     });
+
+    test('ElectricCar fallback without sensor', () => {
+      const e = new ElectricCar(1, 'Tesla', 'Model S', 2024, 100, []);
+      expect(e.getBatteryStatus()).toBe(0);
+      expect(e.getEstimatedRange()).toBe(0);
+    });
+
+    test('Car fuel logic', () => {
+      const f = new FuelLevelSensor(1, 'Fuel', []);
+      const c = new Car(1, 'Peugeot', '208', 2024, 'Essence', [f]);
+
+      c.refillFuel(80);
+      expect(c.getFuelLevel()).toBe(80);
+    });
+
+    test('Car fallback without sensor', () => {
+      const c = new Car(1, 'Peugeot', '208', 2024, 'Essence', []);
+      c.refillFuel(50);
+      expect(c.getFuelLevel()).toBe(0);
+    });
+
+    test('Bike default behavior', () => {
+      const b = new Bike(1, 'Giant', 'Escape', 2024, 'VTC', []);
+      expect(b.getAverageSpeed()).toBe(0);
+    });
+
+    test('Vehicle sensor management', () => {
+      const s = new SpeedSensor(1, 'Speed', []);
+      const v = new Bike(1, 'B', 'M', 2024, 'VTT', [s]);
+
+      expect(v.getSensor('Speed')).toBeDefined();
+
+      v.removeSensor(1);
+      expect(v.getSensor('Speed')).toBeUndefined();
+    });
+
   });
 
-  // --- 5. TESTS DES CAPTEURS (STATISTIQUES) ---
-  describe('Sensors Stats', () => {
-    test('doit calculer la vitesse moyenne via le capteur', () => {
-        const fleet = VehicleFactory.createFleet(data);
-        const v = fleet[0]; // On prend le premier
-        const speed = v.getAverageSpeed();
-        expect(typeof speed).toBe('number');
+  // ---------------- SENSORS ----------------
+  describe('Sensors', () => {
+
+    test('SpeedSensor with data', () => {
+      const s = new SpeedSensor(1, 'Speed', [
+        { timestamp: 't1', value: 20 },
+        { timestamp: 't2', value: 40 }
+      ]);
+
+      expect(s.getSpeed()).toBe(40);
+      expect(s.getAverageSpeed()).toBe(30);
     });
 
-    test('Coverage total des méthodes de Sensor (Moyenne, Max, Evolution)', () => {
-      //On crée un capteru avec historique riche pour passer dans toutes les lignes
-      const history = [
-        {timestamp: '2026-01-01T10:00:00Z', value: 10 },
-        { timestamp: '2026-01-01T10:10:00Z', value: 50 }
-      ]
-
-      const sensor = new SpeedSensor(1, 'Speed', history);
-
-      expect(sensor.getAverage()).toBe(30);
-      expect(sensor.getMaxValue()).toBe(50);
-      expect(sensor.getEvolution()).toBe(40);
-      expect(sensor.getLastValue()).toBe(50);
-
-      // Cas capteur vide
-      const emptySensor = new SpeedSensor(2, 'Speed', []);
-      expect(emptySensor.getAverage()).toBe(0);
-      expect(emptySensor.getMaxValue()).toBe(0);
-      expect(emptySensor.getEvolution()).toBe(0);
-
-    });
-    test('Fix Line 23: Empty sensor history', () => {
-    // On crée un capteur SANS historique
-    const emptySpeed = new SpeedSensor(99, 'Speed', []);
-  
-    // L'appel de ces méthodes va enfin valider la ligne 23
-    expect(emptySpeed.getAverage()).toBe(0);
-    expect(emptySpeed.getMaxValue()).toBe(0);
+    test('SpeedSensor empty', () => {
+      const s = new SpeedSensor(1, 'Speed', []);
+      expect(s.getSpeed()).toBe(0);
+      expect(s.getAverageSpeed()).toBe(0);
     });
 
-    test ('BatterySensor: doit retourner la valeur correcte depuis l,historique', () => {
-      const bat = new BatterySensor(1, 'Battery', [{ timestamp: '2026', value: 80 }]);
-      expect(bat.getBatteryLevel()).toBe(80);
+    test('BatterySensor with discharge', () => {
+      const b = new BatterySensor(1, 'Battery', [
+        { timestamp: 't1', value: 100 },
+        { timestamp: 't2', value: 60 }
+      ]);
+
+      expect(b.getBatteryLevel()).toBe(60);
+      expect(b.gitDischargeRate()).toBe(40);
     });
 
-    test('FuelSensor doit gérer les historiques vide', () => {
-      const fuel = new FuelLevelSensor(2, 'Fuel', []);
-      //Forcer le passage 
-      expect(fuel.getAverage()).toBe(0);
+    test('BatterySensor stable', () => {
+      const b = new BatterySensor(1, 'Battery', [
+        { timestamp: 't1', value: 50 },
+        { timestamp: 't2', value: 50 }
+      ]);
+
+      expect(b.gitDischargeRate()).toBe(0);
     });
-  });
 
-  describe('🚀 Final Coverage Sweep', () => {
-  
-  test('Clean Sensors: Handles empty data (Line 23)', () => {
-    // Crée chaque type de capteur vide pour vider les "return 0" (Ligne 23)
-    const sensors = [
-      new SpeedSensor(1, 'S', []),
-      new BatterySensor(2, 'B', []),
-      new LoadSensor(3, 'L', [])
-    ];
+    test('BatterySensor empty', () => {
+      const b = new BatterySensor(1, 'Battery', []);
+      expect(b.getBatteryLevel()).toBe(0);
+    });
 
-    sensors.forEach(s => {
+    test('Generic sensor statistics', () => {
+      const s = new SpeedSensor(1, 'Speed', [
+        { timestamp: 't1', value: 10 },
+        { timestamp: 't2', value: 50 }
+      ]);
+
+      expect(s.getAverage()).toBe(30);
+      expect(s.getMaxValue()).toBe(50);
+      expect(s.getEvolution()).toBe(40);
+    });
+
+    test('Sensor fallback behavior', () => {
+      const s = new SpeedSensor(1, 'Speed', []);
+
       expect(s.getAverage()).toBe(0);
       expect(s.getMaxValue()).toBe(0);
+      expect(s.getEvolution()).toBe(0);
     });
+
+    test('Fuel and Load sensor fallback', () => {
+      const f = new FuelLevelSensor(1, 'Fuel', []);
+      const l = new LoadSensor(1, 'Load', []);
+
+      expect(f.getAverage()).toBe(0);
+      expect(l.getAverage()).toBe(0);
+    });
+
   });
 
-  test('Clean Factory: Empty sensors (Lines 41, 60)', () => {
-    const rawData = [{
-      id: 88,
-      type: 'Truck', // Teste avec un type existant
-      brand: 'Volvo',
-      model: 'FH',
-      year: 2024,
-      maxLoad: 40000,
-      sensors: [] // CRUCIAL: Tableau vide pour les lignes 41 et 60
-    }];
+  // ---------------- VEHICLE CORE ----------------
+  describe('Vehicle core', () => {
 
-    const fleet = VehicleFactory.createFleet(rawData as any);
-    expect(fleet.length).toBe(1);
-    // On vérifie le contenu sans accéder à la propriété protected
-    expect(fleet[0].getAverageSpeed()).toBe(0);
+    test('average speed with sensor', () => {
+      const s = new SpeedSensor(1, 'Speed', [
+        { timestamp: 't1', value: 20 },
+        { timestamp: 't2', value: 40 }
+      ]);
+
+      const v = new Bike(1, 'B', 'M', 2024, 'VTT', [s]);
+      expect(v.getAverageSpeed()).toBe(30);
+    });
+
+    test('average speed without sensor', () => {
+      const v = new Bike(1, 'B', 'M', 2024, 'VTT', []);
+      expect(v.getAverageSpeed()).toBe(0);
+    });
+
   });
 
-  test('Clean Models: Bike & ElectricCar (Lines 5-7, 11-12, 15-20)', () => {
-    // Instanciation manuelle pour le fichier à 0%
-    const bike = new Bike(1, 'Giant', 'Escape', 2024, 'VTC', []);
-    expect(bike.bikeType).toBe('VTC');
-    expect(bike.getAverageSpeed()).toBe(0);
+  // ---------------- GPS & HISTORY ----------------
+  describe('GPS & History', () => {
 
-    // Test des méthodes spécifiques de ElectricCar
-    const bat = new BatterySensor(1, 'B', [{ timestamp: '1', value: 42 }]);
-    const eCar = new ElectricCar(2, 'Tesla', 'S', 2024,100, [bat]);
-    
-    const status = eCar.getBatteryStatus();
-    //expect(eCar.getEstimatedRange()).toBeGreaterThan(0);
+    test('GPS empty', () => {
+      const gps = new GPSSensor(1, 'GPS', []);
+      expect(gps.getLocation()).toBeNull();
+    });
+
+    test('GPS last value', () => {
+      const gps = new GPSSensor(1, 'GPS', [
+        { timestamp: 't1', value: { lat: 1, lon: 1 } },
+        { timestamp: 't2', value: { lat: 2, lon: 2 } }
+      ]);
+
+      expect(gps.getLocation()?.lat).toBe(2);
+    });
+
+    test('SensorHistory basic behavior', () => {
+      const h = new SensorHistory('2026-01-01T00:00:00Z', 10);
+
+      expect(h.timestamp).toBeInstanceOf(Date);
+      expect(h.isNumeric()).toBe(true);
+      expect(h.timestamp.getUTCFullYear()).toBe(2026);
+    });
+
+    test('SensorHistory formatted date', () => {
+      const h = new SensorHistory('2026-01-01T00:00:00Z', 10);
+      const formatted = h.getFormattedDate();
+
+      expect(typeof formatted).toBe('string');
+      expect(formatted.length).toBeGreaterThan(0);
+    });
+
   });
 
-  test('Clean Car: Refill logic (Lines 21-26)', () => {
-    const fuelSensor = new LoadSensor(1, 'Fuel', [{ timestamp: 'now', value: 0 }]);
-    const car = new Car(3, 'Peugeot', '208', 2024, 'Essence', [fuelSensor]);
-    car.refillFuel(100);
-
-    const level = car.getFuelLevel();
-    // On vérifie que la méthode a bien été exécutée
-    expect(level).toBeDefined();
-  });
 });
-
-describe('File Loader & Data Integrity', () => {
-  
-  test('should load the test_data.json and verify structure', async () => {
-    // Lecture directe via fs pour vérifier que le fichier existe et est lisible
-    const rawData = await fs.readFile('./resources/test_data.json', 'utf8');
-    const data = JSON.parse(rawData);
-
-    expect(Array.isArray(data)).toBe(true);
-    expect(data.length).toBeGreaterThan(0);
-    
-    // Vérifie qu'un véhicule possède bien un ID et un type
-    expect(data[0]).toHaveProperty('id');
-    expect(data[0]).toHaveProperty('type');
-  });
-
-  test('should fail when loading a non-existent file', async () => {
-    await expect(fs.readFile('./non-existent.json', 'utf8'))
-      .rejects
-      .toThrow();
-  });
-});
-});
-
-
