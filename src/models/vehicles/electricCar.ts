@@ -28,4 +28,15 @@ export class ElectricCar extends Vehicle {
         const remainingKwh = (this.batteryCapacity * this.getBatteryStatus()) / 100;
         return kmPerKwh*remainingKwh;
     }
+
+    // On recharge la batterie
+    chargeBattery(level: number): void {
+        const safeLevel = Math.min(100, Math.max(0,level));
+
+        const batterySensor = this.getSensor('Battery');
+        if (batterySensor) {
+        batterySensor.addRecord(new Date().toISOString(), safeLevel);
+        console.log(`Batterie chargée à ${safeLevel}%`);
+    }
+    }
 }

@@ -22,6 +22,18 @@ export class Car extends Vehicle{
         }
         return 0;
     }
+
+    // On mets du carburant
+    refillFuel(level: number): void {
+        // On s'assure que le niveau est entre 0 et 100
+    const safeLevel = Math.min(100, Math.max(0, level));
     
+    const fuelSensor = this.getSensor('Fuel');
+    if (fuelSensor) {
+        fuelSensor.addRecord(new Date().toISOString(), safeLevel);
+        console.log(`Réservoir rempli à ${safeLevel}%`);
+    }
+    }
+
 
 }

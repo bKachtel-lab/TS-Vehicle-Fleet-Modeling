@@ -1,3 +1,4 @@
+import { Position } from "../../interfaces/vehicle.types";
 import { Sensor } from "../sensors/sensor";
 import { SpeedSensor } from '../sensors/speedSensor';
 
@@ -18,15 +19,6 @@ export abstract class Vehicle {
     //Retourne tous les capteurs
     getSensors(): Sensor[] {
         return this.sensors;
-    }
-
-    //Ajoute un nouveau capteur ou remplace l'ancien 
-    addAndReplaceSensor(sensor:Sensor): void{
-        const index = this.sensors.findIndex(s => s.id === sensor.id);
-        if(index !== -1){
-            this.sensors[index] = sensor;
-        }
-        this.sensors.push(sensor);
     }
 
     //Supprime un capteur par son ID

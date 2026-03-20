@@ -35,4 +35,16 @@ export class Truck extends Vehicle  {
         return this.getCurrentLoad() >= this.maxLoad;
     }
 
+    // Ajoute un nouveau sensor load à l'historique
+    setLoad(weight: number): void {
+    const loadSensor = this.getSensor('Load');
+    if (loadSensor) {
+        const now = new Date().toISOString();
+        loadSensor.addRecord(now, weight);
+        console.log(` Charge mise à jour : ${weight}kg`);
+    } else {
+        console.warn(" Aucun capteur de charge (Load) trouvé sur ce camion.");
+    }
+}
+
 }
