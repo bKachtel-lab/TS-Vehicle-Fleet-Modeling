@@ -10,6 +10,8 @@ import { SpeedSensor } from '../src/models/sensors/speedSensor';
 import { LoadSensor } from '../src/models/sensors/loadSensor';
 import { BatterySensor } from '../src/models/sensors/batterySensor';
 import { VehicleFactory } from './services/vehicleFactory';
+import { Car } from './models/vehicles/car';
+import { Bike } from './models/vehicles/bike';
 let data : any;
 beforeAll(async () => {
   data = await fs.readFile('./resources/test_data.json', {
@@ -75,8 +77,74 @@ describe('Sensor model tests', () => {
       truck.setLoad(45000); 
       expect(truck.isOverLoaded()).toBe(true);
     })
-   });
+   }); 
 
+   describe('Electrical Model', () => {
+    test('doit gérer la batterie et l\'autonomie', () => {
+      const fleet = VehicleFactory.createFleet(data);
+      const eCar = fleet.find(v => v instanceof ElectricCar) as ElectricCar;
+
+      if(eCar) {
+        const battery = eCar.getBatteryStatus();
+        expect(battery).toBeGreaterThanOrEqual(0);
+        expect(battery).toBeLessThanOrEqual(100);
+
+        eCar.chargeBattery(100);
+        expect(eCar.getBatteryStatus()).toBe(100);
+        expect(eCar.getEstimatedRange()).toBeGreaterThan(0);
+      }
+    });
+   });
+   // --- 4. TESTS DE LA CAR (THERMIQUE) ET DU BIKE ---
+  describe('Other Vehicles', () => {
+    test('doit gérer le plein d\'essence pour une Car', () => {
+        // On crée manuellement pour tester la logique si pas dans le JSON
+         const fleet = VehicleFactory.createFleet(data);
+
+        const car = fleet.find(v => v instanceof Car) as Car;
+        car.refillFuel(50);
+        // Si tu as un FuelSensor, on vérifie la valeur
+        expect(car.getFuelLevel()).toBe(50);
+    });
+
+    test('doit instancier un Bike correctement', () => {
+        const bike = new Bike(88, 'Giant', 'Escape', 2022, 'VTC', []);
+        expect(bike.bikeType).toBe('VTC');
+        expect(bike.getAverageSpeed()).toBe(0); // Pas de capteur
+    });
+  });
+
+  // --- 5. TESTS DES CAPTEURS (STATISTIQUES) ---
+  describe('Sensors Stats', () => {
+    test('doit calculer la vitesse moyenne via le capteur', () => {
+        const fleet = VehicleFactory.createFleet(data);
+        const v = fleet[0]; // On prend le premier
+        const speed = v.getAverageSpeed();
+        expect(typeof speed).toBe('number');
+    });
+
+    test('Coverage total des méthodes de Sensor (Moyenne, Max, Evolution)', () => {
+      //On crée un capteru avec historique riche pour passer dans toutes les lignes
+      const history = [
+        {timestamp: '2026-01-01T10:00:00Z', value: 10 },
+        { timestamp: '2026-01-01T10:10:00Z', value: 50 }
+      ]
+
+      const sensor = new SpeedSensor(1, 'Speed', history);
+
+      expect(sensor.getAverage()).toBe(30);
+      expect(sensor.getMaxValue()).toBe(50);
+      expect(sensor.getEvolution()).toBe(40);
+      expect(sensor.getLastValue()).toBe(50);
+
+      // Cas capteur vide
+      const emptySensor = new SpeedSensor(2, 'Speed', []);
+      expect(emptySensor.getAverage()).toBe(0);
+      expect(emptySensor.getMaxValue()).toBe(0);
+      expect(emptySensor.getEvolution()).toBe(0);
+
+    })
+  });
 
 
 });
