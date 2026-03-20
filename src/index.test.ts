@@ -38,6 +38,20 @@ describe('Sensor model tests', () => {
       //Vérifie que le premier est bien un Truck (selon ton JSON)
       expect(fleet[0]).toBeInstanceOf(Truck);
     });
+
+    test('doit gérer les types de véhicules inconnus dans le JSON', () => {
+      const badData = [{
+        id: 999, 
+        type: 'UFO', 
+        brand: 'Alien', 
+        model:'X-Files', 
+        year : 2026, 
+        sensors:[]}];
+
+      expect(() => {
+        VehicleFactory.createFleet(badData as any);
+      }).toThrow('Type de véhicule non géré : UFO');
+    });
   });
 
   // --2 TEST DU MODÈLE TRUCK --
