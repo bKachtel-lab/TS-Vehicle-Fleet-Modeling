@@ -5,4 +5,10 @@ export class BatterySensor extends Sensor {
         const last = this.getLastRecord();
         return last ? (last.value as number) : 0;
     }
+
+    //Calcul de la vitesse de decharge
+    gitDischargeRate() : number{
+        const evolution = this.getEvolution();
+        return evolution < 0? Math.abs(evolution) :0;
+    }
 }
