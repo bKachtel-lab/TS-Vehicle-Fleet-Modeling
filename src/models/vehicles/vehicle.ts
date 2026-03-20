@@ -1,4 +1,5 @@
 import { Sensor } from "../sensors/sensor";
+import { SpeedSensor } from '../sensors/speedSensor';
 
 export abstract class Vehicle {
     constructor(
@@ -32,6 +33,15 @@ export abstract class Vehicle {
     removeSensor(sensorId: number): void{
         this.sensors = this.sensors.filter(s => s.id !== sensorId);
 
+    }
+
+    // Méthode commune : tout véhicule peut tenter de donner sa vitesse
+    getAverageSpeed(): number {
+        const sensor = this.getSensor('Speed');
+        if (sensor instanceof SpeedSensor) {
+            return sensor.getAverageSpeed();
+        }
+        return 0; // Pas de capteur de vitesse = 0 km/h
     }
 
 }

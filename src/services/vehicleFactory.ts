@@ -14,7 +14,7 @@ import { BatterySensor } from '../models/sensors/batterySensor';
 import { FuelLevelSensor } from '../models/sensors/fuelLevelSensor';
 import { LoadSensor } from '../models/sensors/loadSensor';
 
-export class VehicleFctory{
+export class VehicleFactory{
 
     /**
      * Point d'entrée : transforme un tableau JSON en une flotte de vehicules
